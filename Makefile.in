@@ -24,8 +24,10 @@ distclean:
 	cd doc;make clean
 	-rm Makefile
 
-cassbeam: $(OBJS) doc/cassbeam.tex
+cassbeam: $(OBJS)
 	$(CC) -o cassbeam $(OBJS) $(LDFLAGS)
+
+doc: doc/cassbeam.tex
 	cd doc;make
 
 install: $(TARGETS) $(PYPROGS)
