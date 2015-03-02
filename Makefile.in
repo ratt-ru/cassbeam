@@ -31,8 +31,8 @@ doc: doc/cassbeam.tex
 	cd doc;make
 
 install: $(TARGETS) $(PYPROGS)
-	-rm -f @prefix@/bin/cassbeam
-	install -m755 cassbeam @prefix@/bin
+	-rm -f $(DESTDIR)@prefix@/bin/cassbeam
+	install -D -m755 cassbeam $(DESTDIR)@prefix@/bin
 
 uninstall:
-	-rm -f @prefix@/bin/cassbeam
+	-rm -f $(DESTDIR)@prefix@/bin/cassbeam
