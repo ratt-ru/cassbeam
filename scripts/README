@@ -1,0 +1,34 @@
+Usage notes for generating a multi-frequency VLA beam
+
+Python scripts require:
+    Numpy
+    pyFITS
+    pyrap
+
+Setup:
+    multiBeamGen.py has a few hardcoded values that need to be changed.
+    cbBin : the full path to cassbeam executable
+    c2fScript : the full path to the cass2fits.py script
+
+Examples:
+
+1. Generating a set of beam FITS files based on the freqneucies in a VLA measurement set:
+
+    multiBeamGen.py -f 3C147-C-LO.MS -t vla-template.in -o vla_1330_1519 -p 512 --pixelsperbeam=64 -c
+
+    -f : measurement set to determine the frequency information
+    -t : cassBeam input file, see the cassbeam documentation
+    -o : output filename prefix
+    -p : number of pixels in the output file (it is actually +1, so 512 returns a 513 x 513 pixel image)
+    --pixelsperbeam : pixels across the primary lobe for the lowest frequency
+
+    generated files:
+    [prefix]_xx_im.fits
+    [prefix]_xx_re.fits
+    [prefix]_xy_im.fits
+    [prefix]_xy_re.fits
+    [prefix]_yx_im.fits
+    [prefix]_yx_re.fits
+    [prefix]_yy_im.fits
+    [prefix]_yy_re.fits
+

@@ -1,0 +1,36 @@
+CC = @CC@
+CFLAGS = @CFLAGS@ -Wall
+LDFLAGS = @LDFLAGS@
+
+
+OBJS = cassbeam.o illum.o antenna.o image.o vector.o image-vector.o \
+       keyvalue.o intvector.o vecarray.o polygon.o randdist.o mathfunc.o \
+       vector-fftw.o
+
+TARGETS = cassbeam
+
+all: $(TARGETS)
+
+clean:
+	-rm -f *.o $(TARGETS)
+	-rm -f core*
+	cd doc;make clean
+
+distclean:
+	-rm -f *.o $(TARGETS)
+	-rm -f *~ doc/*~
+	-rm -f core*
+	-rm -f config.cache config.log config.status
+	cd doc;make clean
+	-rm Makefile
+
+cassbeam: $(OBJS) doc/cassbeam.tex
+	$(CC) -o cassbeam $(OBJS) $(LDFLAGS)
+	cd doc;make
+
+install: $(TARGETS) $(PYPROGS)
+	-rm -f @prefix@/bin/cassbeam
+	install -m755 cassbeam @prefix@/bin
+
+uninstall:
+	-rm -f @prefix@/bin/cassbeam

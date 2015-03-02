@@ -1,0 +1,29 @@
+To install cassbeam:
+
+1.	you must have glib version 1.2 or higher (but less than 2.0)
+
+	This can be found at www.gtk.org
+
+2.	you must have fftw version 2.1 or higher (but less than 3.0)
+
+	This can be found at www.fftw.org
+
+3.	Run 
+
+	./configure 
+
+	To generate makefiles.  To specify an installation destination
+	specify --prefix=<destprefix>, where <destprefix> defaults 
+	to /usr/local/.
+
+4.	Run
+
+	make
+
+5.	To install (optional)
+
+	make install
+
+	(You might need root permission depending on the permissions 
+	of <destprefix>.
+

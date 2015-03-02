@@ -1,0 +1,7 @@
+Please read the documentation:  cd doc ; make ; then view cassbeam.ps.
+
+There is one example included here.  Once compiled, the code can be tested:
+
+cd examples/vla
+
+cassbeam vla-1500MHz.in

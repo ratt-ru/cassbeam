@@ -1,0 +1,2 @@
+foster@elwood:~/VLA/cassbeam/sandbox$ ../scripts/beamGen.py -f ~/VLA/RP-3C147/3C147-C-LO.MS -t ../scripts/vla-template.in -o vla_1330_1519 -p 512 --pixelsperbeam=64 -c
+

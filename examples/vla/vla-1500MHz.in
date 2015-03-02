@@ -1,0 +1,24 @@
+name=VLA
+# VLA definitions 
+sub_h = 8.47852  # meters from vertex to subreflector 
+feed_x = -0.6896837 # meters from optic axis to feed ring
+feed_y = -0.6896837
+feed_z = 1.67640   # height of feed ring from vertex 
+geom = vla_geom
+feedtaper = 10.0	
+feedthetamax = 9.26  # degrees
+legwidth = 0.27     # meters -- - for X shaped, + for + shaped 
+legfoot = 7.55  # meters from optic axis at dish
+legapex = 10.93876  # meters from vertex
+hole_radius = 2.0
+roughness=0.00035
+# Running parameters
+freq = 1.5          # GHz
+gridsize = 120
+out = vla-1500MHz
+Trec=10
+pixelsperbeam=16
+# abnormalities
+dfeed_x=0.051
+focus=-1.413
+dsub_z=-0.022
