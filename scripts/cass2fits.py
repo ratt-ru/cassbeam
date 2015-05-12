@@ -92,7 +92,8 @@ if __name__ == '__main__':
     hdulist = pf.HDUList([hdu])
 
     #for XX,XY,YX,YY,real,imag: write a fits file
-    for pid,pol in enumerate(['xx','xy','yx','yy']):
+    for pid,pol in enumerate(['rr','lr','rl','ll']):
+    #for pid,pol in enumerate(['xx','xy','yx','yy']):
         for cid,cmplx in enumerate(['re','im']):
             #write data to FITS data
             hdu.data=beamCube[:,:,:,2*pid+cid]
