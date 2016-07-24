@@ -1,0 +1,455 @@
+.\" Copyright (C) August 18, 2003  Walter Brisken
+.\"
+.\" %%%LICENSE_START(GPLv2+_DOC_FULL)
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 2 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, see
+.\" <http://www.gnu.org/licenses/>.
+.\" %%%LICENSE_END
+.TH "CASSBEAM" "1" "18 Aug 2003" "1.0" "User Commands"
+.SH "NAME" 
+cassbeam \- Cassbeam is a Cassegrain antenna ray tracer 
+.SH "SYNOPSIS" 
+.PP 
+\fBcassbeam\fR \fIinput_file\fR [\fIkey\fR=\fIvalue\fR ...]
+.SH "DESCRIPTION" 
+.PP 
+\fBcassbeam\fR is a program for Cassegrain antenna modelling.
+It computes several properties of the antenna
+including gain, zenith system temperature, and the beam, in full
+polarization.  All calculations are done in the transmit sense and use
+reciprocity to relate to the equivalent receiving system. 
+.PP
+Cassbeam is a non-interactive command line program that takes all of its input
+from the command line.  Note that this does not preclude someone at a later
+date from making a graphical or web front end.  There is one required
+argument when running cassbeam - the input filename.
+Additional arguments can supplement the
+parameters of the input file.  These arguments are passed in the 
+same \fBkey=value\fR as required in the input file except whitespace
+is not allowed around the equal sign.  If a parameter appears both
+in the input file and the command line, then the value on the command line
+supercedes the value on the input file.
+.SH "INPUT FILE"
+.PP
+The main input file consists of a series of lines of the form 
+\fIkey\fR=\fIvalue\fR.  Only one such entry is allowed per line.  The equal 
+sign is optional.  The input
+files allow comments to be placed within the file.  
+All comments begin with \fI%\fR.  This character and any that follow it on
+a given line are ignored by cassbeam.  Depending on \fIkey\fR, the \fIvalue\fR
+may be one of five types: string, integer, double, vector, none.
+A string is a sequence of non-whitespace characters \fInot\fR surrounded 
+by quotes of any kind.  A double value is a number that can have a fractional
+part.  A vector is a comma-separated list of doubles.  The `none' type expects
+no \fIvalue\fR.  Below is a list of
+the allowed \fIkeys\fR and the type of \fIvalue\fR expected.  If the range of
+legal values is restricted, the legal range will be contained within brackets.
+Note that legal values do not imply a physical system that will generate
+meaningful results!  For the vector type, if a certain number of values are
+needed, they will be indicated in parentheses.  A required parameter will 
+be indicated with a `*'.  It is important to realize that
+the secondary optical surface (i.e., the subreflector) is defined based on the
+input geometry.  Thus changing the feed placement will change the geometry
+of the subreflector!  To change parameters of the telescope without affecting
+the shape of the subreflector, set the pathology parameters.  Note that the
+order of the parameters does not matter.
+
+.SS "Antenna geometry parameters"
+.TP
+\fBfeed\_x\fR
+The x value of the phase center of the feed.  If no value is provided, 0
+is assumed. [double]
+.TP
+\fBfeed\_y\fR
+The y value of the phase center of the feed.  If no value is provided, 0
+is assumed. [double]
+.TP
+\fBfeed\_z\fR
+The z value of the phase center of the feed.  If no value is provided, 0
+is assumed. [double]
+.TP
+\fBgeom\fR
+This string points to a disk file containing the primary optical surface
+geometry.  This file is a three column ascii text file, each containing
+space separated values for r, z, and dz/dr for the antenna.  There is no
+limit (other than your computer's memory) to the number of lines in this file.
+It is assumed (but not checked!) that the values of r start at 0 and are
+equally spaced.  The radius, R, of the primary is given by the value of r in
+the last row.  Columns 1 and 2 are in meters, and column 3 is dimensionless.
+[string]
+.TP
+\fBhole\_radius\fR
+The radius (in meters) of an unpanelled area at the center of the primary.  If
+omitted, no hole will be made. [double, > 0]
+.TP
+\fBlegapex\fR
+The z value where the legs (struts) intersect each other.  
+Note that the legs might terminate before reaching this point.  The default
+value is 1.2*\fBsub_h\fR. [double, > 0]
+.TP
+\fBlegfoot\fR
+The r value where the legs (struts) intersect the primary surface.  The
+default value is half the antenna radius. [double, > 0] 
+.TP
+\fBlegwidth\fR
+The effective width of the legs, used to compute blockage.  Note that currently
+a positive value indicates four equally spaced legs with one leg along the
+x axis.  If the value is negative, its absolute value is used in
+the blockage calculations, but the legs are rotated 45°.  If this
+parameter is not set, or if it is set to 0, then no legs will be generated. [double]
+.TP
+\fBname\fR
+An optional name given to the antenna.  If the name is ``VLBA'', then
+the true strut geometry for the VLBA antennas is used rather than 
+equispaced struts. [string]
+.TP
+\fBroughness\fR
+The RSS surface roughness in meters.  This number represents the combined
+surface error for the primary and secondary.  If no roughness is provided,
+the default value of 0 is used. [double, >= 0]
+.TP
+\fBsub_h\fR
+This value is the z value of the intersection of the subreflector with
+the z axis. [double, > 0]
+.PP
+.SS "Feed pattern parameters"
+.PP
+Note that either both \fBfeedtaper\fR and \fBfeedangle\fR or \fBfeedpattern\fR
+must be provided.
+.TP
+\fBfeedangle\fR
+Sets the reference angle for the feed taper. [double, > 0]
+.TP
+\fBfeedpattern\fR
+The name of the file containing the pattern of the feed.  This file contains
+two space-separated columns of numbers: the angle in degrees and the taper
+in dB.  The first angle must equal 0, and the angles must be uniformly
+spaced. [string]
+.TP
+\fBfeedpatternscale\fR
+The factor by which to scale the pattern defined in \fBfeedpattern\fR.
+[double, > 0]
+.TP
+\fBfeedtaper\fR
+This parameter sets the taper (in dB) of the feed at an angle \fBfeedangle\fR
+from the feed axis to 10^-\fBfeedtaper\fR/10. [double, > 0]
+.PP
+.SS "Pathology parameters"
+.PP
+None of the following operations change the shape of the subreflector - its
+geometry is calculated before their application.  Note that displacements
+of either the feed or the subreflector result in a rotation of the feed
+that corrects for the mispointing caused by the translations.  Rotations
+of the feed act in addition to this correction.  Composited rotations (i.e.,
+setting \fBrsub_x\fR and \fBrsub_y\fR are both provided), the operations
+on the object being rotated proceed in reverse alphabetical order (z 
+rotation before y rotation; y rotation before x rotation) regardless
+of the order that the parameters are received.
+.TP
+\fBdfeed\_x\fR
+Displacement of the feed along the x axis. [double]
+.TP
+\fBdfeed\_y\fR
+Displacement of the feed along the y axis. [double]
+.TP
+\fBdfeed\_z\fR
+Displacement of the feed along the z axis. [double]
+.TP
+\fBdsub\_x\fR
+Displacement of the subreflector along the x axis. [double]
+.TP
+\fBdsub\_y\fR
+Displacement of the subreflector along the y axis. [double]
+.TP
+\fBdsub\_z\fR
+Displacement of the subreflector along the z axis. [double]
+.TP
+\fBfocus\fR
+Displacement of the feed along the feed axis.  A positive value moves the
+feed closer to the subreflector. [double]
+.TP
+\fBrfeed_x\fR
+Rotation of the feed in degrees about the x axis.  A positive 
+value will rotate from the z axis through the y axis. [double]
+.TP
+\fBrfeed_y\fR
+Rotation of the feed in degrees about the y axis.  A positive 
+value will rotate from the x axis through the z axis. [double]
+.TP
+\fBrfeed_z\fR
+Rotation of the feed in degrees about the z axis.  A positive 
+value will rotate from the y axis through the x axis. [double]
+.TP
+\fBrsub_x\fR
+Rotation of the subreflector in degrees about the x axis.  A positive 
+value will rotate from the z axis through the y axis. [double]
+.TP
+\fBrsub_y\fR
+Rotation of the subreflector in degrees about the y axis.  A positive 
+value will rotate from the x axis through the z axis. [double]
+.TP
+\fBrsub_z\fR
+Rotation of the subreflector in degrees about the z axis.  A positive 
+value will rotate from the y axis through the x axis. [double]
+.TP
+\fBsubrotpoint\fR
+Defines the point about which the rotation of the subreflector is performed.
+The contents of the vector depend on the number of elements are provided:
+either only the z value, or the x and y values, or the x, y, and z
+values. [vector (1 or 2 or 3)]
+.PP
+.SS "Operating condition parameters"
+.TP
+\fBcompute\fR
+A string to tell what output to produce.  The string can be `all', `none', 
+or a string containing flag characters.  The default value is `all', meaning
+produce all possible output.  `none' will produce only messages on the screen
+and no output files.  The characters of the general string mean the following:
+.IP
+\fBa\fR Save the aperture images;
+.IP
+\fBj\fR Save the Jones matrices in a table;
+.IP
+\fBp\fR Save the parameters;
+.IP
+\fBs\fR Save the polarized beams.
+.IP
+Note that the string is case insensitive. [string]
+.TP
+\fBdiffeff\fR
+A user supplied diffraction efficiency.  If none is provided, an internal
+algorithm that is not very good is used.  This needs to be upgraded! [double]
+.TP
+\fBfreq\fR
+The frequency in GHz at which the calculation will be run. [double, > 0]
+.TP
+\fBgridsize\fR
+Specifies a fixed grid size.  If odd, the next even number will be used.
+This option overrides any setting of \fBoversamp\fR and is the preferred 
+method of setting the grid size.  Setting it to a value less than 32 will
+result in a grid size of 32. [integer, >= 32]
+.TP
+\fBleggroundscatter\fR
+The fraction of power that scatters off the struts toward the ground.  The
+default value is 0.2. [double, >= 0, <= 1]
+.TP
+\fBmisceff\fR
+A factor of the efficiency calculation that contains ``everything else''.  
+The user is responsible for choosing a realistic value for this.  A default
+of 1 (i.e., 100%) is assumed if this parameter is not provided.
+[double, >= 0, <= 1]
+.TP
+\fBout\fR
+The prefix for all output files.  The default is \fIcassbeam\fR.  A dot
+will always separate the prefix from any trailing characters. [string]
+.TP
+\fBoversamp\fR
+One way of specifying the grid size.  This option will make the grid on the
+primary fine enough to accomodate 4*\fBoversamp\fR*R/lambda points.  The
+default is 1.  Note that vastly ``undersampling'' is fine as the field is
+never calculated anywhere between the feed and the aperture plane.  Normally
+blockage calculations and constancy of the illumination will dictate the
+required sampling.  See \fBgridsize\fR for an alternate way of specifying
+the grid.  This parameter is ignored if \fBgridsize\fR is set. [double, > 0]
+.TP
+\fBpixelsperbeam\fR
+This is the approximate number of pixels that the core of the beam will
+occupy in the output images. [int, > 0]
+.TP
+\fBTground\fR
+The temperature in Kelvin of the ground.  The default value is 290. [double, > 0]
+.TP
+\fBTrec\fR
+The equivalent temperature of the receiver.  This adds into the system
+temperature.  The default value is 50. [double, > 0]
+.TP
+\fBTsky\fR
+The temperature in Kelvin of the sky.  The default value is 3 for frequencies
+over 1 GHz, and 3 * 10^-2.5 nu for frequencies below 1 GHz. [double, > 0]
+.PP
+.SH "OUTPUT FILES"
+.PP
+Up to 12 output files are generated depending
+on which \fBcompute\fR options were selected at run time.  These files are
+listed below.  The letter in brackets in the section headings indicate which
+option is used to enable this file to be written.  All output files begin
+with the value of the input parameter \fBout\fR.  Currently all output images
+are in PGM format, which is a very simple greyscale 
+image format supported by most unix-based image viewers.  
+.SS "Aperture images [a]"
+.PP
+Three images are generated that allow the aperture field to be examined
+qualitatively.
+If quantitative numbers are needed, the source code should be modified to
+export the illumination parameters.
+.TP
+\fIout\fB.illumamp.pgm\fR
+Raster image showing the amplitude
+of the illumination pattern of the primary.  No blockage is done at this
+point.  The scale is linear in flux.
+.TP
+\fIout\fB.illumphase.pgm\fR
+Raster image showing the
+net phase (pathlength multiplied by wave vector) at each point on the
+primary.  A phase gradient is removed.  Portions of the image that correspond
+to zero flux have an arbitrary phase.
+.TP
+\fIout\fB.illumblock.pgm\fR
+Raster image showing the
+blocked portion of the aperture.  White means that this part of the dish is 
+experiences either plane wave blockage from the
+sky or spherical wave blockage from the feed, and thus does not contribute
+to the gain of the antenna.
+.PP
+.SS "Jones matrix file [j]"
+.PP
+The Jones matrix file, \fIout\fB.jones.dat\fR contains the Jones matrix
+(see Hamaker et al. 1996 for 
+details) corresponding to the effect of the antenna on the incoming
+radiation as a function of position on the sky.  The file is organized as
+an eight column ascii.  The first row corresponds
+to the point on the image with smallest l and m.  The rastering
+then proceeds first with increasing l, and then with increasing m.  
+There are a total of n^2 rows, where n is the smallest odd number
+greater than or equal to the \fBgridsize\fR used.  The matrices are
+rastered on a sine-projected coordinate system tangent to the sky at the
+beam center, which corresponds to row number (n^2+1)/2.  At the beam center
+the pixel scale is given by the output parameter \fBbeampixelscale\fR, which
+is stored in the output file \fIout\fB.params\fR described below.
+.PP
+.SS "Parameter file [p]"
+.PP
+The parameter file, \fIout\fB.params\fR is an output file in the same format
+as the input file, containing all of the input parameters that were 
+specified (even if on the command line) as well as many output 
+values.  They are:
+.TP
+\fBAeff\fR
+The effective area of the antenna [m^2]. [double]
+.TP
+\fBAeff\_Tsys\fR
+The effective area of the antenna divided by the system temperature
+[m^2/K]. [double]
+.TP
+\fBampeff\fR
+The amplitude efficiency. [double]
+.TP
+\fBbeampixelscale\fR
+The scale of the generated beam images [deg/pixel]. [double]
+.TP
+\fBblockeff\fR
+The blockage efficiency. [double]
+.TP
+\fBdiffeff\fR
+The diffraction efficiency. [double]
+.TP
+\fBfwhm\_l\fR
+The full width at half max of the beam in the l direction. [double]
+.TP
+\fBfwhm\_m\fR
+The full width at half max of the beam in the m direction. [double]
+.TP
+\fBgain\fR
+The gain G of the antenna. [double]
+.TP
+\fBillumeff\fR
+The illumination efficiency. [double]
+.TP
+\fBpeaksidelobe\fR
+The directivity of the greatest sidelobe relative to the peak directivity
+of the beam. [double]
+.TP
+\fBphaseeff\fR
+The phase efficiency. [double]
+.TP
+\fBpoint\_l\fR
+The l component of the pointing offset from the z axis 
+measured in the image plane. [double]
+.TP
+\fBpoint\_m\fR
+The m component of the pointing offset from the z axis 
+measured in the image plane. [double]
+.TP
+\fBprispilleff\fR
+The primary spillover efficiency. [double]
+.TP
+\fBprogram\fR
+The name of the program run, which is \fIcassbeam\fR. [string]
+.TP
+\fBmisceff\fR
+The miscellaneous efficency. [double]
+.TP
+\fBspilleff\fR
+The spillover efficiency. [double]
+.TP
+\fBsubspilleff\fR
+The subreflector spillover efficiency. [double]
+.TP
+\fBsurfeff\fR
+The surface efficiency. [double]
+.TP
+\fBtotaleff\fR
+The total efficiency calculated for the antenna. [double]
+.TP
+\fBTsys\fR
+The system temperature. [double]
+.TP
+\fBversion\fR
+The software version number. [string]
+.PP
+.SS "Polarized beam images [s]"
+.PP
+With the \fBs\fR option, cassbeam will produce 7 images of the beam showing
+in the four Stokes parameters the response to an unpolarized source as
+a function of the position of the source on the sky.  This information
+is derived from the Jones matrices which are saved in
+\fIout\fB.jones.dat\fR. These images are meant for qualitative inspection.
+The Jones matrices contain the formal output.
+.TP
+\fIout\fB.I.pgm\fR
+Stokes I - total intensity; 
+.TP
+\fIout\fB.Q.pgm\fR
+Stokes Q - excess linear polarization e_1 over e_2;
+.TP
+\fIout\fB.U.pgm\fR
+Stokes U - excess linear polarization in e'_1 over e'_2
+.TP
+\fIout\fB.V.pgm\fR
+Stokes V - excess right circular polarzation
+over left circular polarization;
+.TP
+\fIout\fB.QI.pgm\fR
+The ratio of the Stokes Q image to the 
+Stokes I image;
+.TP
+\fIout\fB.UI.pgm\fR
+The ratio of the Sytokes U image to the 
+Stokes I image; 
+.TP
+\fIout\fB.VI.pgm\fR
+The ratio of the Stokes V image to the 
+Stokes I image; 
+.PP
+.SH "AUTHOR"
+.PP
+\fBCassbeam\fR is written by  Walter Brisken, National Radio Astronomy
+Observatory. This manpage is extracted from his cassbeam manual.
+.SH "SEE ALSO"
+.PP
+See the complete manual in /usr/share/doc/cassbeam/ for more information. 
