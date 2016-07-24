@@ -32,7 +32,7 @@ doc: doc/cassbeam.tex
 
 install: $(TARGETS) $(PYPROGS)
 	-rm -f $(DESTDIR)@prefix@/bin/cassbeam
-	install -D -m755 cassbeam $(DESTDIR)@prefix@/bin/casabeam
+	install -D -m755 cassbeam $(DESTDIR)@prefix@/bin/cassbeam
 
 uninstall:
 	-rm -f $(DESTDIR)@prefix@/bin/cassbeam
