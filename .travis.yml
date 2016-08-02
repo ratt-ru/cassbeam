@@ -1,0 +1,15 @@
+language: c
+
+install:
+    - make
+    - get-deps
+    - autotools-dev
+    - fftw-dev
+    - ghostscript
+    - libglib2.0-dev
+    - texlive
+    - texlive-font-utils
+    - texlive-latex-extra
+
+script:
+    - ./configure && make
