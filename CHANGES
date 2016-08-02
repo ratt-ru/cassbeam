@@ -1,0 +1,10 @@
+1.1
+===
+
+Changes since 1.0
+
+ * make compile on modern systems
+ * don't generate doc by default
+ * support for DESDIR in Makefile
+ * Add manual page
+
