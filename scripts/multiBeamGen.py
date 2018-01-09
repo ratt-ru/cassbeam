@@ -10,7 +10,7 @@ import numpy as n
 import pyrap.tables as pt
 
 #HARDCODE cassbeam and cass2fits.py locations
-cbBin='/usr/local/bin/cassbeam'
+cbBin='/usr/bin/cassbeam'
 c2fScript = os.path.dirname(__file__)+'/cass2fits.py'
 
 
@@ -75,6 +75,18 @@ if __name__ == '__main__':
     templateLines=fh.readlines()
     fh.close()
 
+    ref_freq = taper_coeffs = None
+    for l in templateLines:
+        if l.startswith("reffreq"):
+            ref_freq = float(l.split("=", 1)[1].strip())
+        elif l.startswith("feedtaper"):
+            taperstr = l.split("=",1)[1].strip()
+            taper_coeffs = map(float,taperstr.split(","))
+    if not taper_coeffs:
+        raise KeyError("feedtaper not specified in template file")
+    if len(taper_coeffs) > 1 and ref_freq is None:
+        raise KeyError("reffreq not specified in template file")
+
     inputFiles=[]
     print 'Generating cassBeam input files'
     for f,pix in zip(freqs,ppb):
@@ -82,11 +94,20 @@ if __name__ == '__main__':
         #outStr=opts.output+'-%.2fMHz'+str(f*1.e3)+'MHz'
         outLines=[]
         for l in templateLines:
-            if l.startswith('freq'): outLines.append('freq=%f\n'%f)
-            elif l.startswith('gridsize'): outLines.append('gridsize=%i\n'%gridsize)
-            elif l.startswith('out'): outLines.append('out=%s\n'%outStr)
-            elif l.startswith('pixelsperbeam'): outLines.append('pixelsperbeam=%i\n'%pix)
-            else: outLines.append(l)
+            if l.startswith('freq'): 
+                outLines.append('freq=%f\n'%f)
+            elif l.startswith('gridsize'): 
+                outLines.append('gridsize=%i\n'%gridsize)
+            elif l.startswith('out'): 
+                outLines.append('out=%s\n'%outStr)
+            elif l.startswith('pixelsperbeam'): 
+                outLines.append('pixelsperbeam=%i\n'%pix)
+            elif l.startswith("feedtaper"):
+                ftaper = sum([c*(f-ref_freq)**nn for nn, c in enumerate(taper_coeffs)])
+                print "taper at %f GHz is %f"%(f, ftaper)
+                outLines.append('feedtaper=%f\n'%ftaper)
+            else: 
+                outLines.append(l)
         cassBeamFile=outStr
         inputFiles.append(cassBeamFile)
         fh=open(cassBeamFile+'.in','w')

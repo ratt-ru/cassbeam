@@ -12,7 +12,11 @@ Setup:
 
 Examples:
 
-1. Generating a set of beam FITS files based on the freqneucies in a VLA measurement set:
+1. Makign a whole cube for VLA L-band: 
+
+   ./multiBeamGen.py -f 1000,2000 -t vla-template-L.in -o JVLA-L -p 512 --pixelsperbeam=64 -c
+
+2. Generating a set of beam FITS files based on the freqneucies in a VLA measurement set:
 
     multiBeamGen.py -f 3C147-C-LO.MS -t vla-template.in -o vla_1330_1519 -p 512 --pixelsperbeam=64 -c
 
