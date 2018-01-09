@@ -132,7 +132,7 @@ if __name__ == '__main__':
     c2fArgs=' '
     if opts.clobber: c2fArgs+='-c '
     c2fArgs+='-p %f '%bps
-    c2fArgs+='-o '+opts.output+'_ '
+    c2fArgs+='-o '+opts.output+'- '
     for fn in inputFiles: c2fArgs+=fn+'.jones.dat '
     print 'Running %s %s'%(c2fScript, c2fArgs)
     os.system(c2fScript+' '+c2fArgs)

@@ -98,7 +98,7 @@ if __name__ == '__main__':
         for cid,cmplx in enumerate(['re','im']):
             #write data to FITS data
             hdu.data=beamCube[:,:,:,2*pid+cid]
-            ofn=opts.output+pol+'_'+cmplx+'.fits'
+            ofn=opts.output+pol+'-'+cmplx+'.fits'
             if opts.clobber or not os.path.isfile(ofn): hdulist.writeto(ofn,clobber=opts.clobber)
             else: print 'File: %s exists, and clobber parameter not set, skipping'%ofn
 
