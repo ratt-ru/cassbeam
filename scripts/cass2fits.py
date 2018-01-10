@@ -20,24 +20,23 @@ if __name__ == '__main__':
     o.add_option('-o','--output',dest='output',default='cassBeam_',
         help='Output FITS filename prefix')
     o.add_option('-p','--pixel',dest='pixel',type='float',default=0.01,
-        help='Pixel scale factor in radians, this is the beampixelscale in the cassbeam output parameter file, default: 0.01')
+        help='Pixel scale factor in degrees, this is the beampixelscale in the cassbeam output parameter file, default: 0.01')
     opts, args = o.parse_args(sys.argv[1:])
 
     freqs=[]
     beamCube=[]
     for fid,fn in enumerate(args):
-        print 'Reading %s (%i of %i)'%(fn,fid+1,len(args))
-        freq=float(fn.split('/')[-1].split('-')[-1].split('MHz')[0]) #parse filename for frequency
+        freq=float(fn.split('MHz')[0].split('-')[-1]) #parse filename for frequency
+        print 'Reading %s (%i of %i), frequency is %f MHz'%(fn,fid+1,len(args),freq)
         freqs.append(freq)
         data=n.fromfile(fn,dtype=float,sep=' ')
         data=data.reshape((data.shape[0]/8,8))
         beamCube.append(data)
     freqs=n.array(freqs)*1e6
     beamCube=n.array(beamCube)
-    
+
     dim=int(n.sqrt(beamCube.shape[1]))
     beamCube=beamCube.reshape((beamCube.shape[0],dim,dim,8))
-    
 
     #normalize cube so that peak value is 1.0, is this legit or required?
     beamCube/=n.max(n.abs(beamCube))
@@ -49,7 +48,7 @@ if __name__ == '__main__':
     ctime=datetime.datetime.today()
     hdu.header.set('DATE','%s'%ctime)
     hdu.header.set('DATE-OBS','%s'%ctime)
-    hdu.header.set('ORIGIN', 'GFOSTER')
+    hdu.header.set('ORIGIN', 'RATT')
     hdu.header.set('TELESCOP', 'VLA')
     hdu.header.set('OBJECT', 'beam')
     hdu.header.set('EQUINOX', 2000.0)
@@ -63,14 +62,16 @@ if __name__ == '__main__':
     if beamCube.shape[1]%2==0: crpixVal=int(beamCube.shape[1]/2)
     else: crpixVal=int(((beamCube.shape[1]-1)/2)+1)
 
-    hdu.header.set('CTYPE1', 'M')
-    hdu.header.set('CDELT1', (-1.0) * opts.pixel, 'in radians')
+    hdu.header.set('CTYPE1', 'X', 'points right on the sky')
+    hdu.header.set('CUNIT1', 'DEG')
+    hdu.header.set('CDELT1', opts.pixel, 'degrees')
     hdu.header.set('CRPIX1', crpixVal, 'reference pixel (one relative)')
-    hdu.header.set('CRVAL1', 0.0, 'M = 0 at beam peak')
-    hdu.header.set('CTYPE2', 'L')
-    hdu.header.set('CDELT2', opts.pixel, 'in radians')
+    hdu.header.set('CRVAL1', 0.0, '')
+    hdu.header.set('CTYPE2', 'Y', 'points up on the sky')
+    hdu.header.set('CUNIT2', 'DEG')
+    hdu.header.set('CDELT2', opts.pixel, 'degrees')
     hdu.header.set('CRPIX2', crpixVal, 'reference pixel (one relative)')
-    hdu.header.set('CRVAL2', 0.0, 'L = 0 at beam peak')
+    hdu.header.set('CRVAL2', 0.0, '')
 
     #determine frequency step by assuming equal frequency steps and taking the difference of the first two frequencies
     sortFreqs=n.sort(freqs)
@@ -91,14 +92,28 @@ if __name__ == '__main__':
 
     # create initial HDUList
     hdulist = pf.HDUList([hdu])
+    
+    # normalize beam cube to peak gain of 1 in I
+    # I beam is 1/2{sum |J_ij|^2}
+    peakgain = (0.5*(beamCube**2).sum(3)).max()
+    beamCube /= peakgain
+    print "Peak gain is %f, normalizing to unity" % peakgain
 
     #for XX,XY,YX,YY,real,imag: write a fits file
-    for pid,pol in enumerate(['rr','lr','rl','ll']):
-    #for pid,pol in enumerate(['xx','xy','yx','yy']):
-        for cid,cmplx in enumerate(['re','im']):
+    #for pid,pol in enumerate(['xx','xy','yx','yy']):   # Griffin's old code -- pretty sure xy and yx are swapped
+    # for pid,pol in enumerate(['rr','lr','rl','ll']):  
+    # see https://github.com/ratt-ru/calibration-pipelines/issues/34#issuecomment-103791910
+    # seems cassbeam has RL swapped, so... 
+    for pid,pol in enumerate(['ll','rl','lr','rr']):
+        for cid,cmplx in enumerate(['re','im','ampl']):
             #write data to FITS data
-            hdu.data=beamCube[:,:,:,2*pid+cid]
-            ofn=opts.output+pol+'-'+cmplx+'.fits'
-            if opts.clobber or not os.path.isfile(ofn): hdulist.writeto(ofn,clobber=opts.clobber)
-            else: print 'File: %s exists, and clobber parameter not set, skipping'%ofn
-
+            if cmplx is 'ampl':
+                hdu.data = abs(beamCube[:,:,:,2*pid] + 1j*beamCube[:,:,:,2*pid+1])
+            else:
+                hdu.data = beamCube[:,:,:,2*pid+cid]
+            ofn="%s%s_%s.fits" % ( opts.output, pol, cmplx )
+            if opts.clobber or not os.path.exists(ofn): 
+                hdulist.writeto(ofn,clobber=opts.clobber)
+            else: 
+                print 'File: %s exists, and clobber parameter not set, skipping'%ofn
+                
