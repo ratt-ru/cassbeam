@@ -20,14 +20,14 @@ if __name__ == '__main__':
     o.add_option('-o','--output',dest='output',default='cassBeam_',
         help='Output FITS filename prefix')
     o.add_option('-p','--pixel',dest='pixel',type='float',default=0.01,
-        help='Pixel scale factor in radians, this is the beampixelscale in the cassbeam output parameter file, default: 0.01')
+        help='Pixel scale factor in degrees, this is the beampixelscale in the cassbeam output parameter file, default: 0.01')
     opts, args = o.parse_args(sys.argv[1:])
 
     freqs=[]
     beamCube=[]
     for fid,fn in enumerate(args):
-        print 'Reading %s (%i of %i)'%(fn,fid+1,len(args))
-        freq=float(fn.split('/')[-1].split('-')[1].split('MHz')[0]) #parse filename for frequency
+        freq=float(fn.split('MHz')[0].split('-')[-1]) #parse filename for frequency
+        print 'Reading %s (%i of %i), frequency is %f MHz'%(fn,fid+1,len(args),freq)
         freqs.append(freq)
         data=n.fromfile(fn,dtype=float,sep=' ')
         data=data.reshape((data.shape[0]/8,8))
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     freqs=n.array(freqs)*1e6
     beamCube=n.array(beamCube)
 
-    dim=n.sqrt(beamCube.shape[1])
+    dim=int(n.sqrt(beamCube.shape[1]))
     beamCube=beamCube.reshape((beamCube.shape[0],dim,dim,8))
 
     #normalize cube so that peak value is 1.0, is this legit or required?
@@ -46,12 +46,12 @@ if __name__ == '__main__':
     hdu=pf.PrimaryHDU(templateCube)
 
     ctime=datetime.datetime.today()
-    hdu.header.update('DATE','%s'%ctime)
-    hdu.header.update('DATE-OBS','%s'%ctime)
-    hdu.header.update('ORIGIN', 'GFOSTER')
-    hdu.header.update('TELESCOP', 'VLA')
-    hdu.header.update('OBJECT', 'beam')
-    hdu.header.update('EQUINOX', 2000.0)
+    hdu.header.set('DATE','%s'%ctime)
+    hdu.header.set('DATE-OBS','%s'%ctime)
+    hdu.header.set('ORIGIN', 'RATT')
+    hdu.header.set('TELESCOP', 'VLA')
+    hdu.header.set('OBJECT', 'beam')
+    hdu.header.set('EQUINOX', 2000.0)
 
     print 'Using pixel scale factor: %f radians'%opts.pixel
     # note: defining M as the fastest moving axis (FITS uses
@@ -62,42 +62,58 @@ if __name__ == '__main__':
     if beamCube.shape[1]%2==0: crpixVal=int(beamCube.shape[1]/2)
     else: crpixVal=int(((beamCube.shape[1]-1)/2)+1)
 
-    hdu.header.update('CTYPE1', 'M')
-    hdu.header.update('CDELT1', (-1.0) * opts.pixel, 'in radians')
-    hdu.header.update('CRPIX1', crpixVal, 'reference pixel (one relative)')
-    hdu.header.update('CRVAL1', 0.0, 'M = 0 at beam peak')
-    hdu.header.update('CTYPE2', 'L')
-    hdu.header.update('CDELT2', opts.pixel, 'in radians')
-    hdu.header.update('CRPIX2', crpixVal, 'reference pixel (one relative)')
-    hdu.header.update('CRVAL2', 0.0, 'L = 0 at beam peak')
+    hdu.header.set('CTYPE1', 'X', 'points right on the sky')
+    hdu.header.set('CUNIT1', 'DEG')
+    hdu.header.set('CDELT1', opts.pixel, 'degrees')
+    hdu.header.set('CRPIX1', crpixVal, 'reference pixel (one relative)')
+    hdu.header.set('CRVAL1', 0.0, '')
+    hdu.header.set('CTYPE2', 'Y', 'points up on the sky')
+    hdu.header.set('CUNIT2', 'DEG')
+    hdu.header.set('CDELT2', opts.pixel, 'degrees')
+    hdu.header.set('CRPIX2', crpixVal, 'reference pixel (one relative)')
+    hdu.header.set('CRVAL2', 0.0, '')
 
     #determine frequency step by assuming equal frequency steps and taking the difference of the first two frequencies
     sortFreqs=n.sort(freqs)
     if freqs.shape[0]>1: freqStep=(sortFreqs[-1]-sortFreqs[0])/freqs.shape[0];
     else: freqStep=1.
-    hdu.header.update('CTYPE3', 'FREQ')
-    hdu.header.update('CDELT3', freqStep, 'frequency step in Hz')
-    hdu.header.update('CRPIX3', 1, 'reference frequency postion')
-    hdu.header.update('CRVAL3', sortFreqs[0], 'reference frequency')
-    hdu.header.update('CTYPE4', 'STOKES')
-    hdu.header.update('CDELT4', 1) 
-    hdu.header.update('CRPIX4', 1)
-    hdu.header.update('CRVAL4', -5)
+    hdu.header.set('CTYPE3', 'FREQ')
+    hdu.header.set('CDELT3', freqStep, 'frequency step in Hz')
+    hdu.header.set('CRPIX3', 1, 'reference frequency postion')
+    hdu.header.set('CRVAL3', sortFreqs[0], 'reference frequency')
+    hdu.header.set('CTYPE4', 'STOKES')
+    hdu.header.set('CDELT4', 1) 
+    hdu.header.set('CRPIX4', 1)
+    hdu.header.set('CRVAL4', -5)
     
     # in case the frequency range is irregularly sampled, add keywords giving the actual frequency values
     for i,fq in enumerate(sortFreqs):
-      hdu.header.update('GFREQ%d'%(i+1),fq);
+      hdu.header.set('GFREQ%d'%(i+1),fq);
 
     # create initial HDUList
     hdulist = pf.HDUList([hdu])
+    
+    # normalize beam cube to peak gain of 1 in I
+    # I beam is 1/2{sum |J_ij|^2}
+    peakgain = (0.5*(beamCube**2).sum(3)).max()
+    beamCube /= peakgain
+    print "Peak gain is %f, normalizing to unity" % peakgain
 
     #for XX,XY,YX,YY,real,imag: write a fits file
-    for pid,pol in enumerate(['rr','lr','rl','ll']):
-    #for pid,pol in enumerate(['xx','xy','yx','yy']):
-        for cid,cmplx in enumerate(['re','im']):
+    #for pid,pol in enumerate(['xx','xy','yx','yy']):   # Griffin's old code -- pretty sure xy and yx are swapped
+    # for pid,pol in enumerate(['rr','lr','rl','ll']):  
+    # see https://github.com/ratt-ru/calibration-pipelines/issues/34#issuecomment-103791910
+    # seems cassbeam has RL swapped, so... 
+    for pid,pol in enumerate(['ll','rl','lr','rr']):
+        for cid,cmplx in enumerate(['re','im','ampl']):
             #write data to FITS data
-            hdu.data=beamCube[:,:,:,2*pid+cid]
-            ofn=opts.output+pol+'_'+cmplx+'.fits'
-            if opts.clobber or not os.path.isfile(ofn): hdulist.writeto(ofn,clobber=opts.clobber)
-            else: print 'File: %s exists, and clobber parameter not set, skipping'%ofn
-
+            if cmplx is 'ampl':
+                hdu.data = abs(beamCube[:,:,:,2*pid] + 1j*beamCube[:,:,:,2*pid+1])
+            else:
+                hdu.data = beamCube[:,:,:,2*pid+cid]
+            ofn="%s%s_%s.fits" % ( opts.output, pol, cmplx )
+            if opts.clobber or not os.path.exists(ofn): 
+                hdulist.writeto(ofn,clobber=opts.clobber)
+            else: 
+                print 'File: %s exists, and clobber parameter not set, skipping'%ofn
+                

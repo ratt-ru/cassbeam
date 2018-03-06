@@ -1,0 +1,27 @@
+name=VLA
+# VLA definitions 
+sub_h = 8.47852  # meters from vertex to subreflector 
+
+# S-band feed
+feed_x = 0.196123
+feed_y = -0.955439
+feed_z = 1.67640
+geom = vla_geom
+reffreq = 3.0
+feedtaper = 15.837, -0.004, 0.00023
+feedthetamax = 9.26  # degrees
+legwidth = 0.27     # meters -- - for X shaped, + for + shaped 
+legfoot = 7.55  # meters from optic axis at dish
+legapex = 10.93876  # meters from vertex
+hole_radius = 3.87  # CASA currently has 3.87 for S-band only??? 2 is default
+roughness=0.00035
+# Running parameters
+freq = 1.0          # GHz
+gridsize = 300      #2*output pixels
+out = vla-template
+pixelsperbeam=32
+Trec=10
+# abnormalities
+#dfeed_x=0.051
+#focus=-1.413
+#dsub_z=-0.022
